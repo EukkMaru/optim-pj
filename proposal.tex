@@ -1,0 +1,254 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+\usepackage{amsmath, amsfonts, amssymb, graphicx, bm}
+
+\title{Scheduling with Nonlinear Energy--Latency Trade-offs in Edge Computing for the Energy Sector}
+\author{Sunoh Ryu}
+\date{\today}
+
+\begin{document}
+
+%------------------%
+\begin{frame}
+  \titlepage
+\end{frame}
+
+
+%===========================================================%
+\section{Introduction}
+
+\begin{frame}{Motivation}
+  \begin{itemize}
+    \item Rapid growth of IoT and smart energy systems generates massive distributed data.
+    \item Cloud-only solutions suffer from latency, bandwidth cost, and reliability issues.
+    \item \textbf{Edge computing} enables near-device processing for faster response and reduced data transfer.
+    \item Optimization challenge: balancing computational \textbf{latency} vs. \textbf{energy consumption}.
+  \end{itemize}
+
+  \begin{block}{Definition}
+    Edge computing performs computation closer to data sources, reducing reliance on central cloud servers.
+  \end{block}
+  \begin{itemize}
+    \item Minimizes communication delay: control loops in $\mathcal{O}$(ms).
+    \item Saves bandwidth and improves privacy.
+    \item Enables real-time decision-making in energy-critical systems.
+  \end{itemize}
+\end{frame}
+
+%===========================================================%
+\section{Edge Computing in the Energy Sector}
+
+\begin{frame}{Applications}
+  \begin{itemize}
+    \item \textbf{Smart Grids:} fault detection, voltage regulation, and phasor data processing.
+    \item \textbf{Microgrids:} real-time load and generation balancing.
+    \item \textbf{Renewable Plants:} predictive maintenance using local ML inference.
+    \item \textbf{EV Charging:} on-site optimization of charging schedules.
+  \end{itemize}
+\vspace{0.5cm}
+  \begin{itemize}
+    \item Energy field requires ultra-low latency for protection and control (tens of ms).
+    \item Edge nodes are resource- and power-limited (battery, solar-powered).
+    \item Task scheduling influences:
+      \begin{itemize}
+        \item Power draw of CPUs and communication interfaces.
+        \item Queueing latency of real-time workloads.
+      \end{itemize}
+    \item Hence, need an \textbf{optimization framework} for energy–latency co-minimization.
+  \end{itemize}
+\end{frame}
+
+%===========================================================%
+\section{Problem Formulation}
+
+\begin{frame}{System Model}
+  \begin{itemize}
+    \item Tasks $j \in \{1, \dots, N\}$ arrive at rate $\lambda_j$, each requiring $c_j$ CPU cycles.
+    \item Edge servers $i \in \{1, \dots, M\}$ operate at frequency $f_i$ and capacity $\kappa_i f_i$.
+    \item Binary assignment:
+      \[
+      x_{ij} =
+      \begin{cases}
+      1, & \text{if task $j$ is assigned to server $i$}\\
+      0, & \text{otherwise.}
+      \end{cases}
+      \]
+    \item Utilization of server $i$: $\displaystyle \rho_i = \frac{\sum_j x_{ij}\lambda_j}{\kappa_i f_i}$, with $\rho_i < 1$ for stability.
+  \end{itemize}
+
+  \vspace{0.5cm}
+  \begin{itemize}
+    \item Dynamic power of CPU:
+      \[
+      P_{i,\text{dyn}}(f_i) = \alpha_i f_i^{\gamma}, \quad \gamma \in [2,3]
+      \]
+    \item Total power:
+      \[
+      P_i(f_i, \rho_i) = P_{i,0} + \rho_i\,\alpha_i f_i^{\gamma}
+      \]
+    \item Energy consumption over a time horizon $T$:
+      \[
+      E_i(x,f) = P_i(f_i, \rho_i) \cdot T
+      \]
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Latency Model}
+  \begin{itemize}
+    \item Queueing delay using M/M/1 model:
+      \[
+      W_{q,i} = \frac{\rho_i}{\mu_i(1-\rho_i)}
+      \]
+      where $\mu_i = \kappa_i f_i$.
+    \item Service time for task $j$:
+      \[
+      S_{ij} = \frac{c_j}{\kappa_i f_i}
+      \]
+    \item Network delay between task source and edge server:
+      \[
+      L^{\text{net}}_{ij} = \tau_{ij} + \beta_{ij} d_j
+      \]
+    \item Total latency per task:
+      \[
+      L_{ij} = L^{\text{net}}_{ij} + W_{q,i} + S_{ij}
+      \]
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Optimization Objective}
+  \begin{block}{Energy–Latency Trade-off Objective}
+  \[
+  \min_{x_{ij},\, f_i} 
+  \sum_{i=1}^{M} 
+  \left[
+    E_i(x,f)
+    + \lambda \sum_{j=1}^{N} x_{ij} L_{ij}(f_i)
+  \right]
+  \]
+  \end{block}
+
+  \textbf{Subject to:}
+  \[
+  \begin{cases}
+    \sum_i x_{ij} = 1, & \forall j\\[3pt]
+    f_i^{\min} \le f_i \le f_i^{\max}, & \forall i\\[3pt]
+    \rho_i < 1, & \forall i\\[3pt]
+    x_{ij} \in \{0,1\}
+  \end{cases}
+  \]
+  \vspace{0.2cm}
+  Nonconvex terms arise from $f_i^\gamma$ and $\frac{1}{1-\rho_i}$.
+\end{frame}
+
+\begin{frame}{Nonconvexity and Complexity}
+  \begin{itemize}
+    \item Mixed-integer nonlinear program (MINLP).
+    \item Coupled variables:
+      \[
+      \rho_i = \frac{\sum_j x_{ij}\lambda_j}{\kappa_i f_i}
+      \]
+      creates rational nonlinear terms.
+    \item Problem is NP-hard even for linearized approximations.
+    \item No global optimum obtainable in polynomial time $\Rightarrow$ heuristic/metaheuristic approach.
+  \end{itemize}
+\end{frame}
+
+%===========================================================%
+\section{Solution Approach}
+
+\begin{frame}{Proposed Hybrid Optimization Framework}
+  \begin{itemize}
+    \item \textbf{Outer layer:} Discrete search over task assignment $x_{ij}$ using Tabu Search or Particle Swarm Optimization.
+    \item \textbf{Inner layer:} Continuous refinement of $f_i$ using gradient-based local search or augmented Lagrangian.
+    \item Penalty function for infeasible $\rho_i \ge 1$:
+      \[
+      p(\rho_i) = \eta \, [\max(0,\rho_i - 1 + \epsilon)]^2
+      \]
+    \item Fast update rules via cached per-server aggregates:
+      \[
+      \lambda_i = \sum_j x_{ij}\lambda_j
+      \]
+  \end{itemize}
+\end{frame}
+
+% \begin{frame}{Algorithm Outline}
+%   \scriptsize
+%   \textbf{Tabu + Continuous Refinement Algorithm}
+%   \begin{enumerate}
+%     \item Initialize $x$ via greedy latency-based assignment.
+%     \item Compute $\rho_i$, set $f_i$ minimally for stability.
+%     \item Evaluate objective $J(x,f)$.
+%     \item Repeat for $K$ iterations:
+%       \begin{itemize}
+%         \item Generate neighbors by swapping/moving tasks.
+%         \item For each candidate $x'$, locally optimize $f'$:
+%           \[
+%           \frac{dJ_i}{df_i} = 3\alpha_i f_i^2 + \lambda \sum_{j\in i} \frac{\partial L_{ij}}{\partial f_i} = 0
+%           \]
+%         \item Update tabu list and choose best feasible neighbor.
+%       \end{itemize}
+%     \item Return best $(x,f)$ found.
+%   \end{enumerate}
+% \end{frame}
+
+%===========================================================%
+\section{Experimental Plan}
+
+\begin{frame}{Datasets and Validation}
+  \begin{itemize}
+    \item \textbf{Datasets:}
+      \begin{itemize}
+        \item Google Cluster Workload Trace (task arrivals, durations, CPU use).
+        \item EdgeBench synthetic workloads for energy-latency benchmarking.
+      \end{itemize}
+    \item \textbf{Validation Metrics:}
+      \begin{itemize}
+        \item Total energy $E_{\text{tot}} = \sum_i E_i$
+        \item Mean and 95\% latency per task.
+        \item Pareto frontier (energy vs. latency) by varying $\lambda$.
+        \item Solver convergence time and iteration count.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Baselines \& Expected Outcomes}
+  \begin{itemize}
+    \item \textbf{Greedy Minimum Latency:} Assign tasks by lowest $L^{\text{net}}_{ij}$ ignoring energy.
+    \item \textbf{Energy-Aware Greedy:} Assign tasks by lowest $\Delta E_i$.
+    \item \textbf{Round Robin:} Simple load balance baseline.
+    \item Compare objective $J(x,f)$ against proposed hybrid solver.
+  \end{itemize}
+
+  \vspace{0.5cm}
+
+  \begin{itemize}
+    \item Demonstrate nonlinear relationship between energy and latency.
+    \item Show that hybrid optimization improves both metrics simultaneously.
+    \item Provide generalized solver adaptable to other edge domains.
+  \end{itemize}
+\end{frame}
+
+%===========================================================%
+\section{References}
+
+\begin{frame}{Key References and Datasets}
+  \tiny
+  \begin{thebibliography}{99}
+    \bibitem{googletrace} Reiss et al., ``Google Cluster Data: 2019 Update'', Google Research, 2019.
+    \bibitem{edgebench} Satyanarayanan et al., ``EdgeBench: Benchmarking Edge Computing Platforms'', ACM, 2020.
+    \bibitem{cloudsim} Calheiros et al., ``CloudSim: A Toolkit for Modeling and Simulation of Cloud Computing'', Software: Practice and Experience, 2011.
+    \bibitem{dvfs} Kim et al., ``DVFS-Based Power Control for Embedded Processors'', IEEE TCAD, 2014.
+    \bibitem{queue} Kleinrock, ``Queueing Systems, Volume 1: Theory'', Wiley, 1975.
+  \end{thebibliography}
+\end{frame}
+
+%------------------%
+\begin{frame}
+  \centering
+  \Huge \textbf{Thank You!}\\[0.3cm]
+  \normalsize Questions?
+\end{frame}
+
+\end{document}

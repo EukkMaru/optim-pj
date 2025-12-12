@@ -1,0 +1,76 @@
+# =====================
+# Python
+# =====================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# =====================
+# Data / Large files
+# =====================
+data/
+clusterdata/
+*.zip
+
+# =====================
+# Logs & outputs
+# =====================
+*.log
+*.out
+*.nav
+*.txt
+
+# =====================
+# LaTeX
+# =====================
+*.aux
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# =====================
+# Images & media
+# =====================
+*.jpg
+*.png
+*.gif
+
+# =====================
+# Markdown (exclude all except README)
+# =====================
+*.md
+!README.md
+
+# =====================
+# Presentations
+# =====================
+presentation*
+*.pdf
+
+# =====================
+# Results / generated files
+# =====================
+results/
+results_summary.csv
+
+# =====================
+# OS / Editor
+# =====================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =====================
+# Misc
+# =====================
+*.cache
+.claude/
